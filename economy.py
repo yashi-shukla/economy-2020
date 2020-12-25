@@ -13,16 +13,32 @@ from tqdm.std import TqdmMonitorWarning
 from wordcloud import WordCloud
 from sklearn.feature_extraction.text import TfidfVectorizer
 
+from nltk.corpus import stopwords
+from nltk.stem import WordNetLemmatizer
 from tqdm import tqdm
 from numpy.core.fromnumeric import argmin
 from scipy import stats
 import os 
 # %%
+lemmatizer = WordNetLemmatizer()
+
+def lemmatize_words(text):
+    out_text = []
+    for w in str(text).split():
+        lemmas = [
+            lemmatizer.lemmatize(w, 'v'),
+            lemmatizer.lemmatize(w, 'n'),
+            lemmatizer.lemmatize(w, 'a')]
+        out_text.append(lemmas[argmin(list(map(len, lemmas)))])
+    return ' '.join(out_text)
+
+stop = stopwords.words('english')
+remove_stop = lambda text: ' '.join([w for w in str(text).split() if w not in stop])
 remove_hindi = lambda text: ''.join([char for char in text if ord(char) < 200])
 fix_whitespaces = lambda  text : re.sub('[\s]+', ' ', text)
 remove_punctuation = lambda text: re.sub('[^\w\s]', '', text)
 remove_num = lambda text: re.sub('[0-9]+', '', text)
-pre_process = lambda text : remove_num(remove_punctuation(fix_whitespaces(remove_hindi(text))))
+pre_process = lambda text : remove_stop(lemmatize_words(remove_num(remove_punctuation(fix_whitespaces(remove_hindi(text))))))
 #%%
 data = {
     'text' : [],
@@ -30,7 +46,7 @@ data = {
     'precedent' : []
 }
 
-speech_dir = 'speeches'
+speech_dir = 'speeches/speeches'
 for file_name in os.listdir(speech_dir):
     file_name = os.path.join(speech_dir, file_name)
     with open(file_name, 'r', encoding='utf-8') as f:
